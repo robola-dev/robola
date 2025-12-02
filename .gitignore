@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
-
+uv.lock
 
 # Build artifacts
 build/
