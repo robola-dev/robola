@@ -19,6 +19,7 @@ from .model_data import (
 logger = logging.getLogger(__name__)
 
 _SHORTCUT_FLOAT_TOL = 1e-6
+COMPILE_COMMENT_TAG = "robola compile"
 
 
 def _describe_spec_object(obj: Any) -> str:
@@ -1435,6 +1436,7 @@ def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict
 
     option_settings = model_data.get("option") or {}
     stat_settings = model_data.get("stat") or {}
+    visual_settings = model_data.get("visual") or {}
 
     if compiler_settings:
         _apply_spec_settings(save_spec.compiler, compiler_settings)
@@ -1442,6 +1444,8 @@ def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict
         _apply_spec_settings(save_spec.option, option_settings)
     if stat_settings:
         _apply_spec_settings(save_spec.stat, stat_settings)
+    if visual_settings:
+        _apply_spec_settings(save_spec.visual, visual_settings)
 
     root_path = target_path.parent
 
@@ -1524,6 +1528,13 @@ def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict
             model_data,
             tendon_path_fallback=tendon_path_fallback,
         )
+        
+        current_comment = (getattr(save_spec, "comment", "") or "").strip()
+        if COMPILE_COMMENT_TAG.lower() not in current_comment.lower():
+            save_spec.comment = (
+                f"{current_comment}\n{COMPILE_COMMENT_TAG}" if current_comment else COMPILE_COMMENT_TAG
+            )
+        print("Added compile comment to MJCF model.", save_spec.comment, current_comment, sep=" | ")
         save_spec.compile()
         print("Finished compiling MJCF model.")
     finally:
@@ -1531,11 +1542,11 @@ def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict
         normalized_texturedir = _normalize_for_output(root_path, texturedir_for_compile if texturedir_for_compile is not None else desired_texturedir or previous_texturedir)
         save_spec.meshdir = normalized_meshdir
         save_spec.texturedir = normalized_texturedir
-
     save_spec.to_file(str(target_path))
 
     try:
-        tree = ET.parse(str(target_path))
+        parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
+        tree = ET.parse(str(target_path), parser=parser)
         root = tree.getroot()
         compiler_elem = root.find("compiler")
 

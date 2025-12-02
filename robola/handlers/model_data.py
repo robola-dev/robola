@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import math
+import warnings
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 import mujoco
@@ -326,8 +327,13 @@ def quat2BabylonEuler(quat, degrees=True, invert=True):
     if q.shape != (4,):
         raise ValueError("quat must be length-4")
     q_xyzw = np.array([q[1], q[2], q[3], q[0]], dtype=float)
-    rot = R.from_quat(q_xyzw)
-    euler = rot.as_euler('xyz', degrees=degrees)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Gimbal lock detected. Setting third angle to zero since it is not possible to uniquely determine all angles.",
+        )
+        rot = R.from_quat(q_xyzw)
+        euler = rot.as_euler('xyz', degrees=degrees)
     if invert:
         euler = -euler
         euler[1], euler[2] = euler[2], euler[1]
@@ -402,6 +408,8 @@ def pack_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjD
         "compiler": _serialize_mj_value(spec.compiler),
         "option": _serialize_mj_value(spec.option),
         "stat": _serialize_mj_value(spec.stat),
+        "visual": _serialize_mj_value(getattr(spec, "visual", None)),
+        
     }
     return model_dict
 

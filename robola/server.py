@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 class RobolaServer:
     """Robola 本地 WebSocket 服务器"""
 
+    COMPILE_TAG = "robola compile"
+
     def __init__(
         self,
         mjcf_path: Optional[str] = None,
@@ -70,9 +72,20 @@ class RobolaServer:
     def _preload_model(self):
         """预加载 MJCF 模型"""
         try:
+            if not self.mjcf_path:
+                raise ValueError("MJCF path is not set")
             print(f"[SERVER] Pre-loading MJCF model from: {self.mjcf_path}")
             logger.info(f"Pre-loading MJCF model from: {self.mjcf_path}")
-            self.spec = mujoco.MjSpec.from_file(str(self.mjcf_path))
+            base_spec = mujoco.MjSpec.from_file(str(self.mjcf_path))
+            target_path = self._ensure_compile_comment(base_spec, self.mjcf_path)
+
+            if target_path == self.mjcf_path:
+                self.spec = base_spec
+            else:
+                self.mjcf_path = target_path
+                self.work_dir = self.mjcf_path.parent
+                self.spec = mujoco.MjSpec.from_file(str(self.mjcf_path))
+
             self.model = self.spec.compile()
             self.data = mujoco.MjData(self.model)
             print(f"[SERVER] Model loaded successfully: {self.spec.modelname}")
@@ -81,6 +94,29 @@ class RobolaServer:
             print(f"[SERVER] Failed to pre-load MJCF model: {e}")
             logger.error(f"Failed to pre-load MJCF model: {e}")
             raise
+
+    def _ensure_compile_comment(self, spec: mujoco.MjSpec, source_path: Path) -> Path:
+        """Ensure exported MJCF carries the compile marker before loading."""
+        comment = (getattr(spec, "comment", "") or "")
+        if self.COMPILE_TAG.lower() in comment.lower():
+            return source_path
+
+        trimmed = comment.strip()
+        updated_comment = f"{trimmed}\n{self.COMPILE_TAG}" if trimmed else self.COMPILE_TAG
+        spec.comment = updated_comment
+
+        target_path = source_path.with_name(
+            f"{source_path.stem}_robola_compile{source_path.suffix}"
+        )
+
+        logger.info(
+            "Comment missing compile tag; exporting updated MJCF to %s",
+            target_path,
+        )
+        print(f"[SERVER] Exporting MJCF with compile tag to: {target_path}")
+        spec.compile()
+        spec.to_file(str(target_path))
+        return target_path
 
     def _create_app(self) -> FastAPI:
         """创建 FastAPI 应用"""
