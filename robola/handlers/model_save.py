@@ -1534,9 +1534,7 @@ def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict
             save_spec.comment = (
                 f"{current_comment}\n{COMPILE_COMMENT_TAG}" if current_comment else COMPILE_COMMENT_TAG
             )
-        print("Added compile comment to MJCF model.", save_spec.comment, current_comment, sep=" | ")
         save_spec.compile()
-        print("Finished compiling MJCF model.")
     finally:
         normalized_meshdir = _normalize_for_output(root_path, meshdir_for_compile if meshdir_for_compile is not None else desired_meshdir or previous_meshdir)
         normalized_texturedir = _normalize_for_output(root_path, texturedir_for_compile if texturedir_for_compile is not None else desired_texturedir or previous_texturedir)
@@ -1566,6 +1564,8 @@ def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict
             tree.write(str(target_path), encoding="utf-8", xml_declaration=True)
     except Exception:
         logger.warning("Failed to normalize asset directories in output MJCF", exc_info=True)
+    
+    print("Finished compiling MJCF model to %s" % str(target_path))
 
     return {
         "target_file": str(target_path),

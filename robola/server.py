@@ -97,17 +97,37 @@ class RobolaServer:
 
     def _ensure_compile_comment(self, spec: mujoco.MjSpec, source_path: Path) -> Path:
         """Ensure exported MJCF carries the compile marker before loading."""
-        comment = (getattr(spec, "comment", "") or "")
-        if self.COMPILE_TAG.lower() in comment.lower():
-            return source_path
-
-        trimmed = comment.strip()
-        updated_comment = f"{trimmed}\n{self.COMPILE_TAG}" if trimmed else self.COMPILE_TAG
-        spec.comment = updated_comment
-
         target_path = source_path.with_name(
             f"{source_path.stem}_robola_compile{source_path.suffix}"
         )
+
+        if target_path.exists():
+            try:
+                compiled_spec = mujoco.MjSpec.from_file(str(target_path))
+            except Exception as exc:  # pragma: no cover - best effort check
+                logger.warning(
+                    "Unable to load existing compiled MJCF %s: %s",
+                    target_path,
+                    exc,
+                )
+            else:
+                if self._has_compile_tag(compiled_spec):
+                    logger.info(
+                        "Reusing existing compiled MJCF with valid tag: %s",
+                        target_path,
+                    )
+                    return target_path
+                logger.info(
+                    "Existing compiled MJCF missing compile tag, regenerating: %s",
+                    target_path,
+                )
+
+        if self._has_compile_tag(spec):
+            return source_path
+
+        trimmed = (getattr(spec, "comment", "") or "").strip()
+        updated_comment = f"{trimmed}\n{self.COMPILE_TAG}" if trimmed else self.COMPILE_TAG
+        spec.comment = updated_comment
 
         logger.info(
             "Comment missing compile tag; exporting updated MJCF to %s",
@@ -117,6 +137,11 @@ class RobolaServer:
         spec.compile()
         spec.to_file(str(target_path))
         return target_path
+
+    def _has_compile_tag(self, spec: mujoco.MjSpec) -> bool:
+        """Return True if the spec already contains the compile tag comment."""
+        comment = (getattr(spec, "comment", "") or "").lower()
+        return self.COMPILE_TAG.lower() in comment
 
     def _create_app(self) -> FastAPI:
         """创建 FastAPI 应用"""

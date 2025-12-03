@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Robola Team"}
+    {name = "Robola Team", email = "support@robola.dev"}
 ]
 keywords = ["mujoco", "mjcf", "robotics", "simulation", "editor"]
 classifiers = [
@@ -30,6 +30,12 @@ dependencies = [
     "trimesh>=3.0.0",
     "scipy>=1.7.0",
 ]
+
+[project.urls]
+Homepage = "https://robola.dev"
+Repository = "https://github.com/robola-dev/robola"
+Documentation = "https://github.com/robola-dev/robola#readme"
+Issues = "https://github.com/robola-dev/robola/issues"
 
 [project.optional-dependencies]
 dev = [
