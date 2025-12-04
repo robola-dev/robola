@@ -15,7 +15,7 @@ RobolaPyLib powers the local runtime that feeds the [Robola Web Editor](https://
 ### From PyPI (recommended)
 
 ```bash
-pip install --upgrade robola
+pip install robola
 ```
 
 ### From source (development)
@@ -75,7 +75,7 @@ robola serve /path/to/model.xml --fps 30
 | --- | --- | --- |
 | `--port` | WebSocket listening port | `9527` |
 | `--origin` | Allowed browser origin (CORS) | `*` (set to `https://robolaweb.com` when sharing) |
-| `--fps` | Simulation streaming rate (1–60 Hz) | `60` |
+| `--fps` | Simulation streaming rate (1–60 Hz) | `30` |
 
 ---
 
@@ -103,6 +103,8 @@ Call `serve()` inside a notebook, a script, or your own application to reuse the
 | “Unable to connect” in the editor | Port/origin mismatch | Ensure the CLI `--port` and `--origin` match the values entered in the editor |
 | Simulation crashes on start | Missing meshes/textures referenced by MJCF | Check the terminal logs and verify every asset path is valid relative to the MJCF file |
 | Saving fails | File not writable | Confirm the XML can be written and that the CLI is still running |
+
+> ⚠️ Current limitation: Robola does **not** support MuJoCo Flex (soft bodies) or height-field (`hfield`) based terrain rendering yet. These assets will be ignored/omitted when streaming to the editor.
 
 ---
 
