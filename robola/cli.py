@@ -39,6 +39,12 @@ def main():
         default="*",
         help="Allowed CORS origin (default: *)",
     )
+    serve_parser.add_argument(
+        "--fps",
+        type=int,
+        default=30,
+        help="Simulation streaming frequency in Hz (1-60, default: 60)",
+    )
 
     # version 命令
     subparsers.add_parser("version", help="Show version information")
@@ -63,10 +69,15 @@ def main():
 
         from .server import serve
 
+        if args.fps < 1 or args.fps > 60:
+            print("Error: --fps must be between 1 and 60", file=sys.stderr)
+            sys.exit(1)
+
         serve(
             mjcf_path=mjcf_path,
             port=args.port,
             allowed_origin=args.origin,
+            fps=args.fps,
         )
 
     elif args.command == "version":

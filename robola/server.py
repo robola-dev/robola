@@ -5,21 +5,20 @@ Robola WebSocket Server
 """
 
 import json
-import asyncio
 import logging
 import base64
 from pathlib import Path
 from typing import Optional, Dict, Any
 
 import mujoco
-import numpy as np
 import trimesh
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from .handlers.model_data import pack_model_data
 from .handlers.model_save import save_model_data
+from .handlers.simulation_runtime import SimulationRuntime
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +33,7 @@ class RobolaServer:
         mjcf_path: Optional[str] = None,
         port: int = 9527,
         allowed_origin: str = "*",
+        simulation_fps: float = 60.0,
     ):
         """
         初始化 Robola 服务器
@@ -46,6 +46,9 @@ class RobolaServer:
         self.mjcf_path: Optional[Path] = None
         self.port = port
         self.allowed_origin = allowed_origin
+        if simulation_fps <= 0 or simulation_fps > 60:
+            raise ValueError("simulation_fps must be between 1 and 60 Hz")
+        self.simulation_fps = simulation_fps
 
         if mjcf_path:
             self.mjcf_path = Path(mjcf_path).resolve()
@@ -61,6 +64,9 @@ class RobolaServer:
 
         # 工作目录（MJCF 文件所在目录）
         self.work_dir: Optional[Path] = self.mjcf_path.parent if self.mjcf_path else None
+
+        # Simulation runtime controller
+        self.simulation = SimulationRuntime(self, interval_hz=self.simulation_fps)
 
         # 如果指定了 MJCF 文件，预加载模型
         if self.mjcf_path:
@@ -88,6 +94,8 @@ class RobolaServer:
 
             self.model = self.spec.compile()
             self.data = mujoco.MjData(self.model)
+            if self.simulation:
+                self.simulation.invalidate_metadata()
             print(f"[SERVER] Model loaded successfully: {self.spec.modelname}")
             logger.info(f"Model loaded successfully: {self.spec.modelname}")
         except Exception as e:
@@ -205,6 +213,8 @@ class RobolaServer:
                     )
                 except:
                     pass
+            finally:
+                await self.simulation.handle_disconnect(websocket)
 
         return app
 
@@ -236,6 +246,13 @@ class RobolaServer:
             "upload_mesh": self._handle_mesh_upload,
             "upload_texture": self._handle_texture_upload,
             "step_simulation": self._handle_step_simulation,
+            "start_simulation": self._handle_start_simulation,
+            "pause_simulation": self._handle_pause_simulation,
+            "stop_simulation": self._handle_stop_simulation,
+            "reset_simulation": self._handle_reset_simulation,
+            "set_joint_position": self._handle_set_joint_position,
+            "set_equality_active": self._handle_set_equality_active,
+            "set_actuator_controls": self._handle_set_actuator_controls,
         }
 
         handler = handlers.get(message_type)
@@ -274,6 +291,7 @@ class RobolaServer:
             self.spec = mujoco.MjSpec.from_file(str(self.mjcf_path))
             self.model = self.spec.compile()
             self.data = mujoco.MjData(self.model)
+            self.simulation.invalidate_metadata()
 
             await websocket.send_text(
                 json.dumps(
@@ -336,6 +354,7 @@ class RobolaServer:
             self.spec = mujoco.MjSpec.from_file(str(self.mjcf_path))
             self.model = self.spec.compile()
             self.data = mujoco.MjData(self.model)
+            self.simulation.invalidate_metadata()
 
             await websocket.send_text(
                 json.dumps({"type": "save_model_result", "status": "ok"})
@@ -685,20 +704,36 @@ class RobolaServer:
 
     async def _handle_step_simulation(self, websocket: WebSocket, message: dict):
         """执行仿真步进"""
-        if self.model is None or self.data is None:
-            await websocket.send_text(
-                json.dumps({"type": "error", "message": "No model loaded"})
-            )
-            return
+        await self.simulation.step(websocket)
 
-        try:
-            mujoco.mj_step(self.model, self.data)
-            await self._handle_get_model_data(websocket, {})
-        except Exception as e:
-            logger.error(f"Simulation step failed: {e}")
-            await websocket.send_text(
-                json.dumps({"type": "error", "message": f"Simulation step failed: {str(e)}"})
-            )
+    async def _handle_start_simulation(self, websocket: WebSocket, message: dict):
+        await self.simulation.start(websocket)
+
+    async def _handle_pause_simulation(self, websocket: WebSocket, message: dict):
+        await self.simulation.pause(websocket)
+
+    async def _handle_stop_simulation(self, websocket: WebSocket, message: dict):
+        await self.simulation.stop(websocket, reset=True)
+
+    async def _handle_reset_simulation(self, websocket: WebSocket, message: dict):
+        await self.simulation.reset(websocket)
+
+    async def _handle_set_joint_position(self, websocket: WebSocket, message: dict):
+        await self.simulation.set_joint_position(
+            websocket,
+            message.get("joint_id"),
+            message.get("value"),
+        )
+
+    async def _handle_set_equality_active(self, websocket: WebSocket, message: dict):
+        await self.simulation.set_equality_active(
+            websocket,
+            message.get("equality_id"),
+            message.get("active"),
+        )
+
+    async def _handle_set_actuator_controls(self, websocket: WebSocket, message: dict):
+        await self.simulation.set_actuator_controls(websocket, message.get("controls"))
 
     def run(self):
         """启动服务器"""
@@ -725,6 +760,7 @@ def serve(
     mjcf_path: Optional[str] = None,
     port: int = 9527,
     allowed_origin: str = "*",
+    fps: float = 60.0,
 ):
     """
     启动 Robola 本地服务
@@ -734,9 +770,13 @@ def serve(
         port: WebSocket 服务端口
         allowed_origin: 允许的 CORS 来源
     """
+    if fps <= 0 or fps > 60:
+        raise ValueError("fps must be between 1 and 60 Hz")
+
     server = RobolaServer(
         mjcf_path=mjcf_path,
         port=port,
         allowed_origin=allowed_origin,
+        simulation_fps=fps,
     )
     server.run()

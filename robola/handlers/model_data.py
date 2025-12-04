@@ -420,8 +420,26 @@ def mujoco2WebPos(position):
 
 
 def mujoco2WebQuat(rotation):
-    """Convert a mujoco rotation (quaternion) to a web-compatible format."""
-    return [-rotation[1], -rotation[3], -rotation[2], rotation[0]]
+    """Convert MuJoCo [w,x,y,z] quaternion to BabylonJS [x,y,z,w] (left-handed)."""
+    quat = np.asarray(rotation, dtype=float)
+    if quat.shape != (4,):
+        raise ValueError("rotation must be a length-4 sequence [w, x, y, z]")
+
+    rh_quat_xyzw = np.array([quat[1], quat[2], quat[3], quat[0]], dtype=float)
+    rh_rot = R.from_quat(rh_quat_xyzw)
+
+    # Swap MuJoCo Y/Z axes to mirror into Babylon's left-handed basis.
+    axis_swap = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+        ],
+        dtype=float,
+    )
+    lh_matrix = axis_swap @ rh_rot.as_matrix() @ axis_swap.T
+    lh_quat_xyzw = R.from_matrix(lh_matrix).as_quat()
+    return lh_quat_xyzw.tolist()
 
 
 def standardize_name(itemname, orig_name, id):
