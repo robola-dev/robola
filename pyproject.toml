@@ -1,12 +1,12 @@
 [project]
 name = "robola"
 version = "0.1.0"
-description = "Robola MJCF Editor - Local Python Library for MuJoCo model editing"
+description = "Robola MJCF Editor Local Bridge - Local Python Library for MuJoCo and Online Web mjcf editing"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Robola Team", email = "support@robola.dev"}
+    {name = "Robola Team", email = "robolaweb@foxmail.com"}
 ]
 keywords = ["mujoco", "mjcf", "robotics", "simulation", "editor"]
 classifiers = [
@@ -25,14 +25,14 @@ dependencies = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.20.0",
     "websockets>=11.0",
-    "mujoco>=3.0.0",
+    "mujoco>=3.3.0",
     "numpy>=1.20.0",
     "trimesh>=3.0.0",
     "scipy>=1.7.0",
 ]
 
 [project.urls]
-Homepage = "https://robola.dev"
+Homepage = "https://robolaweb.com"
 Repository = "https://github.com/robola-dev/robola"
 Documentation = "https://github.com/robola-dev/robola#readme"
 Issues = "https://github.com/robola-dev/robola/issues"
