@@ -29,7 +29,7 @@ pip install -e .
 Prerequisites:
 
 - Python 3.10 or later
-- MuJoCo 3.0+ (and its license/key environment variables configured if required)
+- MuJoCo 3.3+ (and its license/key environment variables configured if required)
 
 ---
 
@@ -50,6 +50,20 @@ Prerequisites:
    - Start/pause/stop simulations or save back to disk from the browser
 
 > 📌 Keep the CLI process running while the browser tab is open so the editor can stream frames and send commands.
+
+---
+
+## Example Models
+
+You can use MJCF models from the [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) as examples. Clone the repository and serve any `.xml` file:
+
+```bash
+git clone https://github.com/google-deepmind/mujoco_menagerie.git
+cd mujoco_menagerie
+robola serve ./google_robot/scene.xml 
+```
+
+Then connect to the Robola Web Editor at [https://robolaweb.com/editor](https://robolaweb.com/editor) using port 9527.
 
 ---
 
