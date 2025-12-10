@@ -457,8 +457,8 @@ def _build_muscle_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
     ]
 
     dyn = _make_param_vector([timeconst_vals[0], timeconst_vals[1], tausmooth])
-    gain = _make_param_vector(gain_params, fill=-1.0)
-    bias = _make_param_vector(gain_params, fill=-1.0)
+    gain = _make_param_vector(gain_params, fill=0.0)
+    bias = _make_param_vector(gain_params, fill=0.0)
 
     return {
         "gaintype": mujoco.mjtGain.mjGAIN_MUSCLE.value,
@@ -973,8 +973,16 @@ def _apply_texture_properties(texture: mujoco.MjsTexture, data: Dict[str, Any]) 
     _maybe_set(texture, "gridsize", data.get("gridsize"), transform=lambda v: _to_sequence(v, cast=int))
     if data.get("gridlayout") is not None:
         texture.gridlayout = _to_sequence(data.get("gridlayout")) or []
-    if data.get("cubefiles") is not None:
-        texture.cubefiles = _to_sequence(data.get("cubefiles")) or []
+    cubefiles_raw = data.get("cubefiles")
+    if cubefiles_raw:
+        cubefiles_seq = _to_sequence(cubefiles_raw)
+        cleaned_cubefiles = [
+            str(entry)
+            for entry in (cubefiles_seq or [])
+            if entry is not None and str(entry).strip() != ""
+        ]
+        if cleaned_cubefiles:
+            texture.cubefiles = cleaned_cubefiles
     if data.get("hflip") is not None:
         texture.hflip = bool(data["hflip"])
     if data.get("vflip") is not None:
@@ -1540,8 +1548,11 @@ def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict
         normalized_texturedir = _normalize_for_output(root_path, texturedir_for_compile if texturedir_for_compile is not None else desired_texturedir or previous_texturedir)
         save_spec.meshdir = normalized_meshdir
         save_spec.texturedir = normalized_texturedir
-    save_spec.to_file(str(target_path))
-
+    try:
+        save_spec.to_file(str(target_path))
+    except Exception as exc:
+        logger.error("Failed to write MJCF model to %s", str(target_path), exc_info=True)
+        raise RuntimeError(f"Failed to write MJCF model to {str(target_path)}") from exc
     try:
         parser = ET.XMLParser(target=ET.TreeBuilder(insert_comments=True))
         tree = ET.parse(str(target_path), parser=parser)

@@ -73,6 +73,9 @@ Then connect to the Robola Web Editor at [https://robolaweb.com/editor](https://
 # Load a model with the default port (9527)
 robola serve /path/to/model.xml
 
+# Bootstrap a blank scene and launch the server (path is created from the built-in template before serving)
+robola serve --new /path/to/new_scene.xml
+
 # Use a custom port
 robola serve /path/to/model.xml --port 9000
 
@@ -90,6 +93,7 @@ robola serve /path/to/model.xml --fps 30
 | `--port` | WebSocket listening port | `9527` |
 | `--origin` | Allowed browser origin (CORS) | `*` (set to `https://robolaweb.com` when sharing) |
 | `--fps` | Simulation streaming rate (1–60 Hz) | `30` |
+| `--new` | Create the specified MJCF path with the built-in template before serving (fails if the file already exists) | `false` |
 
 ---
 

@@ -346,8 +346,6 @@ class RobolaServer:
                 )
                 return
 
-            logger.info(f"Saving model to: {self.mjcf_path}")
-
             save_model_data(self.spec, self.model, model_data, str(self.mjcf_path))
 
             # 重新加载模型以获取最新状态
@@ -359,6 +357,7 @@ class RobolaServer:
             await websocket.send_text(
                 json.dumps({"type": "save_model_result", "status": "ok"})
             )
+            logger.info(f"Model saved successfully: {self.mjcf_path}")
 
         except Exception as e:
             logger.error(f"Failed to save model: {e}")
@@ -748,9 +747,9 @@ class RobolaServer:
         print(f"  Port:      {self.port}")
         print(f"{'='*60}")
         print(f"  WebSocket: ws://localhost:{self.port}/ws")
-        print(f"  Health:    http://localhost:{self.port}/health")
+        print(f"  Editor:    https://www.robolaweb.com/editor")
         print(f"{'='*60}")
-        print(f"\n  Open Robola Editor in your browser and connect!")
+        print(f"\n  Open Robola Editor: https://www.robolaweb.com/editor in your browser and connect!")
         print(f"  Press Ctrl+C to stop the server.\n")
 
         uvicorn.run(self.app, host="0.0.0.0", port=self.port, log_level="info")

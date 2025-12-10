@@ -980,6 +980,7 @@ def pack_actuators_data(spec: mujoco.MjSpec) -> list:
             bias = bias_params[:3]
             shortcut_cylinder = {"timeconst": timeconst, "area": area, "bias": bias}
         if shortcut == "muscle":
+            gain_params = _to_float_list(spec.actuators[i].gainprm, length=9)
             timeconst = dyn_params[:2]
             tausmooth = dyn_params[2]
             length_range = gain_params[:2]
