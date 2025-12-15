@@ -759,7 +759,10 @@ def _apply_geom_properties(geom: mujoco.MjsGeom, data: Dict[str, Any]) -> None:
             _maybe_set(geom, "quat", data.get("euler"), transform=_convert_quat_from_euler)
         elif data.get("quat") is not None:
             _maybe_set(geom, "quat", _to_sequence(data.get("quat")))
-    _maybe_set(geom, "size", data.get("size"), transform=_normalize_size_sequence)
+    if data.get("type") == 4 or data.get("type") == 6:
+        _maybe_set(geom, "size", [data.get("size")[0], data.get("size")[2], data.get("size")[1]], transform=_normalize_size_sequence)
+    else:
+        _maybe_set(geom, "size", data.get("size"), transform=_normalize_size_sequence)
     if "contype" in data:
         geom.contype = data["contype"]
     if "conaffinity" in data:
@@ -811,6 +814,7 @@ def _apply_site_properties(site: mujoco.MjsSite, data: Dict[str, Any]) -> None:
         fromto = None
     use_fromto = False
     if fromto is not None:
+        fromto[1], fromto[2], fromto[4], fromto[5] = fromto[2], fromto[1], fromto[5], fromto[4]
         supported_fromto_types = {
             mujoco.mjtGeom.mjGEOM_CAPSULE,
             mujoco.mjtGeom.mjGEOM_CYLINDER,
@@ -856,7 +860,10 @@ def _apply_site_properties(site: mujoco.MjsSite, data: Dict[str, Any]) -> None:
             _maybe_set(site, "quat", data.get("euler"), transform=_convert_quat_from_euler)
         elif data.get("quat") is not None:
             _maybe_set(site, "quat", _to_sequence(data.get("quat")))
-    _maybe_set(site, "size", data.get("size"), transform=_normalize_size_sequence)
+    if data.get("type") == 4 or data.get("type") == 6:
+        _maybe_set(site, "size", [data.get("size")[0], data.get("size")[2], data.get("size")[1]], transform=_normalize_size_sequence)
+    else:
+        _maybe_set(site, "size", data.get("size"), transform=_normalize_size_sequence)
     material_value = data.get("material")
     if material_value is not None:
         site.material = material_value

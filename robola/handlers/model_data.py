@@ -514,6 +514,11 @@ def pack_geoms_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjD
     """打包几何体数据"""
     geoms = []
     for i in range(len(spec.geoms)):
+        type = spec.geoms[i].type.value
+        size = spec.geoms[i].size.tolist()
+        if type == 4 or type == 6:
+            size = [size[0], size[2], size[1]]
+
         geom_dict = {
             "id": i,
             "name": standardize_name("geom", spec.geoms[i].name, i),
@@ -532,7 +537,7 @@ def pack_geoms_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjD
                 )
                 else ([None if np.isnan(x) else x for x in spec.geoms[i].fromto.tolist()] if spec.geoms[i].fromto is not None else [])
             ),
-            "size": spec.geoms[i].size.tolist(),
+            "size": size,
             "contype": spec.geoms[i].contype,
             "conaffinity": spec.geoms[i].conaffinity,
             "condim": spec.geoms[i].condim,
@@ -564,6 +569,10 @@ def pack_site_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjDa
     """打包Site数据"""
     sites = []
     for i in range(len(spec.sites)):
+        type = spec.sites[i].type.value
+        size = spec.sites[i].size.tolist()
+        if type == 4 or type == 6:
+            size = [size[0], size[2], size[1]]
         site_dict = {
             "id": i,
             "name": standardize_name("site", spec.sites[i].name, i),
@@ -581,7 +590,7 @@ def pack_site_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjDa
                 )
                 else ([None if np.isnan(x) else x for x in spec.sites[i].fromto.tolist()] if spec.sites[i].fromto is not None else [])
             ),
-            "size": spec.sites[i].size.tolist(),
+            "size": size,
             "type": spec.sites[i].type.value,
             "material": spec.sites[i].material,
             "group": spec.sites[i].group,

@@ -74,7 +74,7 @@ Then connect to the Robola Web Editor at [https://robolaweb.com/editor](https://
 robola serve /path/to/model.xml
 
 # Bootstrap a blank scene and launch the server (path is created from the built-in template before serving)
-robola serve --new /path/to/new_scene.xml
+robola serve /path/to/new_scene.xml --new
 
 # Use a custom port
 robola serve /path/to/model.xml --port 9000

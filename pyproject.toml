@@ -1,6 +1,6 @@
 [project]
 name = "robola"
-version = "0.1.0"
+version = "0.2.0"
 description = "Robola MJCF Editor Local Bridge - Local Python Library for MuJoCo and Online Web mjcf editing"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://robolaweb.com"
+Homepage = "https://www.robolaweb.com"
 Repository = "https://github.com/robola-dev/robola"
 Documentation = "https://github.com/robola-dev/robola#readme"
 Issues = "https://github.com/robola-dev/robola/issues"
