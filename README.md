@@ -1,12 +1,12 @@
 # Robola – Local MuJoCo Runtime Companion
 
-RobolaPyLib powers the local runtime that feeds the [Robola Web Editor](https://robolaweb.com/):
+RobolaPyLib powers the local runtime that feeds the [Robola Web Editor](https://www.robolaweb.com/):
 
 - Load and validate MuJoCo MJCF scenes on your own machine
 - Stream geometry/material/joint data to the browser in real time
 - Expose a WebSocket API for simulation control, saving, and asset transfer
 
-> ✅ Use the online editor at **https://robolaweb.com/editor**. The website never touches your disk—the CLI in this repo loads every file locally and only streams the data you approve.
+> ✅ Use the online editor at **https://www.robolaweb.com/editor**. The website never touches your disk—the CLI in this repo loads every file locally and only streams the data you approve.
 
 ---
 
@@ -21,8 +21,8 @@ pip install robola
 ### From source (development)
 
 ```bash
-git clone https://github.com/robola-dev/RobolaPyLib.git
-cd RobolaPyLib
+git clone https://github.com/robola-dev/robola.git
+cd robola
 pip install -e .
 ```
 
@@ -35,14 +35,18 @@ Prerequisites:
 
 ## 5-Minute Quickstart
 
-1. **Prepare a model** – keep an `*.xml` MJCF file handy (for example `~/robots/spot.xml`).
+1. **Prepare a model** – keep an `*.xml` MJCF file handy (for example `./robots/spot.xml`).
 2. **Start the local server**
    ```bash
-   robola serve ~/robots/spot.xml --port 9527
+   robola serve ./robots/spot.xml 
+   ```
+   or create mjcf from --new:
+   ```
+   robola serve ./robot.xml --new
    ```
    - Serves WebSocket traffic on `ws://localhost:9527`
    - The terminal banner confirms that the runtime is up
-3. **Open the online editor** – visit [https://robolaweb.com/editor](https://robolaweb.com/editor) and sign in.
+3. **Open the online editor** – visit [https://www.robolaweb.com/editor](https://www.robolaweb.com/editor) and sign in.
 4. **Connect to the runtime** – enter `9527` in the “WebSocket Port” field (top-right) and click **Connect**.
 5. **Model, simulate, iterate**
    - The editor fetches the local model and renders the scene
@@ -63,7 +67,7 @@ cd mujoco_menagerie
 robola serve ./google_robot/scene.xml 
 ```
 
-Then connect to the Robola Web Editor at [https://robolaweb.com/editor](https://robolaweb.com/editor) using port 9527.
+Then connect to the Robola Web Editor at [https://www.robolaweb.com/editor](https://www.robolaweb.com/editor) using port 9527.
 
 ---
 
@@ -91,7 +95,6 @@ robola serve /path/to/model.xml --fps 30
 | Option | Description | Default |
 | --- | --- | --- |
 | `--port` | WebSocket listening port | `9527` |
-| `--origin` | Allowed browser origin (CORS) | `*` (set to `https://robolaweb.com` when sharing) |
 | `--fps` | Simulation streaming rate (1–60 Hz) | `30` |
 | `--new` | Create the specified MJCF path with the built-in template before serving (fails if the file already exists) | `false` |
 
@@ -103,9 +106,8 @@ robola serve /path/to/model.xml --fps 30
 from robola import serve
 
 serve(
-    mjcf_path="/abs/path/to/model.xml",
+    mjcf_path="path/to/model.xml",
     port=9527,
-    allowed_origin="https://robolaweb.com",
     fps=30,
 )
 ```

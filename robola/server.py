@@ -8,7 +8,7 @@ import json
 import logging
 import base64
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 import mujoco
 import trimesh
@@ -218,6 +218,19 @@ class RobolaServer:
 
         return app
 
+    def _build_body_name_map(self) -> List[Dict[str, Any]]:
+        """Return a list of runtime body id/name pairs for the current model."""
+        if not self.model:
+            return []
+        mapping: List[Dict[str, Any]] = []
+        for body_id in range(self.model.nbody):
+            try:
+                name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, body_id)
+            except Exception:  # pragma: no cover - best effort lookup
+                name = None
+            mapping.append({"id": body_id, "name": name or f"body_{body_id}"})
+        return mapping
+
     async def _send_model_loaded(self, websocket: WebSocket):
         """发送模型加载完成消息"""
         await websocket.send_text(
@@ -355,7 +368,14 @@ class RobolaServer:
             self.simulation.invalidate_metadata()
 
             await websocket.send_text(
-                json.dumps({"type": "save_model_result", "status": "ok"})
+                json.dumps(
+                    {
+                        "type": "save_model_result",
+                        "status": "ok",
+                        "body_name_map": self._build_body_name_map(),
+                    },
+                    separators=(",", ":"),
+                )
             )
             logger.info(f"Model saved successfully: {self.mjcf_path}")
 
