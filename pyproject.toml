@@ -1,6 +1,6 @@
 [project]
 name = "robola"
-version = "0.2.3"
+version = "0.2.4"
 description = "Robola MJCF Editor Local Bridge - Local Python Library for MuJoCo and Online Web mjcf editing"
 readme = "README.md"
 requires-python = ">=3.10"

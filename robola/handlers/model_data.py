@@ -1,7 +1,8 @@
 """
-Model Data Packing - 将 MuJoCo 模型数据打包为 JSON 格式
+Model Data Packing - Pack MuJoCo model data into JSON format
 
-从 MjSpec/MjModel/MjData 提取所有元素信息，转换为前端可用的字典格式。
+Extract all element information from MjSpec/MjModel/MjData and convert it into
+a dictionary format usable by the frontend.
 """
 from __future__ import annotations
 
@@ -443,7 +444,7 @@ def mujoco2WebQuat(rotation):
 
 
 def standardize_name(itemname, orig_name, id):
-    """标准化元素名称"""
+    """Standardize element name"""
     if not orig_name:
         return f"{itemname}_{id}_"
     elif orig_name.startswith(f"{itemname}_") and orig_name.endswith("_"):
@@ -453,7 +454,6 @@ def standardize_name(itemname, orig_name, id):
 
 
 def pack_bodies_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjData) -> list:
-    """打包身体数据"""
     bodies = []
     for i in range(len(spec.bodies)):
         body_dict = {
@@ -476,7 +476,6 @@ def pack_bodies_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.Mj
 
 
 def pack_joints_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjData) -> list:
-    """打包关节数据"""
     joints = []
     for i in range(len(spec.joints)):
         joint_dict = {
@@ -511,7 +510,6 @@ def pack_joints_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.Mj
 
 
 def pack_geoms_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjData) -> list:
-    """打包几何体数据"""
     geoms = []
     for i in range(len(spec.geoms)):
         type = spec.geoms[i].type.value
@@ -566,7 +564,6 @@ def pack_geoms_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjD
 
 
 def pack_site_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjData) -> list:
-    """打包Site数据"""
     sites = []
     for i in range(len(spec.sites)):
         type = spec.sites[i].type.value
@@ -602,7 +599,6 @@ def pack_site_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjDa
 
 
 def pack_camera_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjData) -> list:
-    """打包Camera数据"""
     cameras = []
     for i in range(len(spec.cameras)):
         camera_dict = {
@@ -630,7 +626,6 @@ def pack_camera_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.Mj
 
 
 def pack_lights_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjData) -> list:
-    """打包Light数据"""
     lights = []
     for i in range(len(spec.lights)):
         light_dict = {
@@ -660,7 +655,6 @@ def pack_lights_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.Mj
 
 
 def pack_mesh_data(spec: mujoco.MjSpec) -> list:
-    """打包Mesh数据"""
     meshes = []
     for i in range(len(spec.meshes)):
         mesh_dict = {
@@ -685,7 +679,6 @@ def pack_mesh_data(spec: mujoco.MjSpec) -> list:
 
 
 def pack_textures_data(spec: mujoco.MjSpec) -> list:
-    """打包Texture数据"""
     textures = []
     for i in range(len(spec.textures)):
         texture_dict = {
@@ -715,7 +708,6 @@ def pack_textures_data(spec: mujoco.MjSpec) -> list:
 
 
 def pack_materials_data(spec: mujoco.MjSpec) -> list:
-    """打包Material数据"""
     materials = []
     for i in range(len(spec.materials)):
         material_dict = {
@@ -737,7 +729,6 @@ def pack_materials_data(spec: mujoco.MjSpec) -> list:
 
 
 def pack_pairs_data(spec: mujoco.MjSpec) -> list:
-    """打包Pair数据"""
     pairs = []
     for i in range(len(spec.pairs)):
         pair_dict = {
@@ -758,7 +749,6 @@ def pack_pairs_data(spec: mujoco.MjSpec) -> list:
 
 
 def pack_exclude_data(spec: mujoco.MjSpec) -> list:
-    """打包Exclude数据"""
     excludes = []
     for i in range(len(spec.excludes)):
         exclude_dict = {
@@ -772,7 +762,6 @@ def pack_exclude_data(spec: mujoco.MjSpec) -> list:
 
 
 def pack_equalities_data(spec: mujoco.MjSpec) -> list:
-    """打包Equality数据"""
     equalities = []
     for i in range(len(spec.equalities)):
         type_val = spec.equalities[i].type.value
@@ -834,7 +823,7 @@ def extract_tendon_path_segments(
     spec: mujoco.MjSpec,
     model: mujoco.MjModel | None,
 ) -> dict[int, list[dict[str, Any]]]:
-    """收集每条tendon的路径定义"""
+    """Collect the path segments for each tendon."""
     if spec is None or model is None:
         return {}
 
@@ -893,7 +882,6 @@ def extract_tendon_path_segments(
 
 
 def pack_tendons_data(spec: mujoco.MjSpec, model: mujoco.MjModel | None) -> list:
-    """打包Tendon数据"""
     tendon_paths = extract_tendon_path_segments(spec, model)
     tendons = []
     for i in range(len(spec.tendons)):
@@ -926,7 +914,6 @@ def pack_tendons_data(spec: mujoco.MjSpec, model: mujoco.MjModel | None) -> list
 
 
 def pack_actuators_data(spec: mujoco.MjSpec) -> list:
-    """打包Actuator数据"""
     actuators = []
     for i in range(len(spec.actuators)):
         shortcut = infer_actuator_shortcut_from_spec(spec.actuators[i])
@@ -1050,7 +1037,6 @@ def pack_actuators_data(spec: mujoco.MjSpec) -> list:
 
 
 def pack_sensors_data(spec: mujoco.MjSpec) -> list:
-    """打包Sensor数据"""
     sensors = []
     for i in range(len(spec.sensors)):
         sensor_dict = {
@@ -1073,7 +1059,6 @@ def pack_sensors_data(spec: mujoco.MjSpec) -> list:
 
 
 def pack_keys_data(spec: mujoco.MjSpec) -> list:
-    """打包Key数据"""
     keys = []
     for i in range(len(spec.keys)):
         key_dict = {

@@ -1,7 +1,7 @@
 """
 Robola WebSocket Server
 
-提供本地 WebSocket 服务，用于与 Robola Web Editor 通信。
+Provides a local WebSocket service for communication with the Robola Web Editor.
 """
 
 import json
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class RobolaServer:
-    """Robola 本地 WebSocket 服务器"""
+    """Robola Local WebSocket Server"""
 
     COMPILE_TAG = "robola compile"
 
@@ -36,12 +36,12 @@ class RobolaServer:
         simulation_fps: float = 60.0,
     ):
         """
-        初始化 Robola 服务器
+        Init Robola Server
 
         Args:
-            mjcf_path: MJCF 文件的绝对路径 (可选，可以通过 WebSocket 消息加载)
-            port: WebSocket 服务端口
-            allowed_origin: 允许的 CORS 来源
+            mjcf_path: Absolute path to the MJCF file (optional; can be loaded via a WebSocket message)
+            port: WebSocket server port
+            allowed_origin: Allowed CORS origin
         """
         self.mjcf_path: Optional[Path] = None
         self.port = port
@@ -62,21 +62,19 @@ class RobolaServer:
         self.model: Optional[mujoco.MjModel] = None
         self.data: Optional[mujoco.MjData] = None
 
-        # 工作目录（MJCF 文件所在目录）
         self.work_dir: Optional[Path] = self.mjcf_path.parent if self.mjcf_path else None
 
         # Simulation runtime controller
         self.simulation = SimulationRuntime(self, interval_hz=self.simulation_fps)
 
-        # 如果指定了 MJCF 文件，预加载模型
         if self.mjcf_path:
             self._preload_model()
 
-        # FastAPI 应用
+        # FastAPI Application
         self.app = self._create_app()
 
     def _preload_model(self):
-        """预加载 MJCF 模型"""
+        """pre-load MJCF model from file"""
         try:
             if not self.mjcf_path:
                 raise ValueError("MJCF path is not set")
@@ -152,14 +150,14 @@ class RobolaServer:
         return self.COMPILE_TAG.lower() in comment
 
     def _create_app(self) -> FastAPI:
-        """创建 FastAPI 应用"""
+        """Create FastAPI Application"""
         app = FastAPI(
             title="Robola Local Server",
             description="Local WebSocket server for Robola MJCF Editor",
             version="0.1.0",
         )
 
-        # 配置 CORS
+        # Config CORS
         origins = [self.allowed_origin] if self.allowed_origin != "*" else ["*"]
         app.add_middleware(
             CORSMiddleware,
@@ -188,7 +186,6 @@ class RobolaServer:
             print("[SERVER] WebSocket client connected")
 
             try:
-                # 如果已经加载了模型，自动发送模型数据
                 if self.spec is not None and self.model is not None:
                     print(f"[SERVER] Auto-sending model data, model: {self.spec.modelname}")
                     logger.info("Auto-sending model data to new client")
@@ -232,7 +229,7 @@ class RobolaServer:
         return mapping
 
     async def _send_model_loaded(self, websocket: WebSocket):
-        """发送模型加载完成消息"""
+        """Send model loaded notification"""
         await websocket.send_text(
             json.dumps(
                 {
@@ -247,7 +244,7 @@ class RobolaServer:
         )
 
     async def _handle_message(self, websocket: WebSocket, message: dict):
-        """处理 WebSocket 消息"""
+        """Handle incoming WebSocket message"""
         message_type = message.get("type")
 
         handlers = {
@@ -279,9 +276,8 @@ class RobolaServer:
             )
 
     async def _handle_load_xml(self, websocket: WebSocket, message: dict):
-        """加载 MJCF 模型"""
+        """Load MJCF model from XML file"""
         try:
-            # 支持从消息中获取 xml_file 路径，或使用初始化时指定的路径
             xml_file = message.get("xml_file")
             if xml_file:
                 self.mjcf_path = Path(xml_file).resolve()
@@ -319,7 +315,6 @@ class RobolaServer:
                 )
             )
 
-            # 立即发送模型数据
             await self._handle_get_model_data(websocket, {})
 
         except Exception as e:
@@ -329,7 +324,7 @@ class RobolaServer:
             )
 
     async def _handle_get_model_data(self, websocket: WebSocket, message: dict):
-        """发送模型数据"""
+        """Send packed model data to client"""
         if self.spec is None or self.model is None or self.data is None:
             await websocket.send_text(
                 json.dumps({"type": "error", "message": "No model loaded"})
@@ -348,7 +343,7 @@ class RobolaServer:
             )
 
     async def _handle_save_model(self, websocket: WebSocket, message: dict):
-        """保存模型"""
+        """Save modified model data to MJCF file"""
         try:
             model_data = message.get("modelData")
             if model_data is None:
@@ -361,7 +356,6 @@ class RobolaServer:
 
             save_model_data(self.spec, self.model, model_data, str(self.mjcf_path))
 
-            # 重新加载模型以获取最新状态
             self.spec = mujoco.MjSpec.from_file(str(self.mjcf_path))
             self.model = self.spec.compile()
             self.data = mujoco.MjData(self.model)
@@ -388,7 +382,7 @@ class RobolaServer:
             )
 
     async def _handle_mesh_request(self, websocket: WebSocket, message: dict):
-        """处理 mesh 文件请求"""
+        """Process mesh file request"""
         try:
             mesh_name = message.get("meshName")
             request_id = message.get("requestId")
@@ -409,7 +403,6 @@ class RobolaServer:
             mesh_spec = self.spec.mesh(mesh_name)
 
             if mesh_spec.file == "":
-                # 从模型数据生成 mesh
                 mesh_id = self.model.mesh(mesh_name).id
                 vertadr = self.model.mesh_vertadr[mesh_id]
                 vertnum = self.model.mesh_vertnum[mesh_id]
@@ -419,7 +412,6 @@ class RobolaServer:
                 verts = self.model.mesh_vert[vertadr : vertadr + vertnum].reshape(-1, 3)
                 faces = self.model.mesh_face[faceadr : faceadr + facenum].reshape(-1, 3)
 
-                # 坐标转换
                 verts[:, [0, 1, 2]] = verts[:, [2, 1, 0]]
                 faces[:, [0, 1, 2]] = faces[:, [2, 1, 0]]
 
@@ -429,7 +421,7 @@ class RobolaServer:
                 file_size = len(file_data)
                 base64_data = base64.b64encode(file_data).decode("utf-8")
             else:
-                # 从文件读取 mesh
+                # Load mesh from file
                 mesh_dir = self.spec.meshdir if self.spec.meshdir else ""
                 mesh_path = self.work_dir / mesh_dir / mesh_spec.file
 
@@ -491,7 +483,7 @@ class RobolaServer:
             )
 
     async def _handle_texture_request(self, websocket: WebSocket, message: dict):
-        """处理 texture 文件请求"""
+        """ texture request """
         try:
             texture_name = message.get("textureName")
             request_id = message.get("requestId")
@@ -534,7 +526,6 @@ class RobolaServer:
             texture_path = self.work_dir / texture_dir / texture_file
 
             if not texture_path.exists():
-                # 尝试直接在工作目录下查找
                 texture_path = self.work_dir / texture_file
                 if not texture_path.exists():
                     await websocket.send_text(
@@ -602,7 +593,7 @@ class RobolaServer:
             )
 
     async def _handle_mesh_upload(self, websocket: WebSocket, message: dict):
-        """处理 mesh 文件上传"""
+        """mesh file upload"""
         try:
             mesh_name = message.get("meshName")
             file_name = message.get("fileName")
@@ -621,7 +612,6 @@ class RobolaServer:
                 )
                 return
 
-            # 确定保存路径
             mesh_dir = self.work_dir
             if self.spec and self.spec.meshdir:
                 mesh_dir = self.work_dir / self.spec.meshdir
@@ -629,7 +619,6 @@ class RobolaServer:
             mesh_dir.mkdir(parents=True, exist_ok=True)
             mesh_path = mesh_dir / file_name
 
-            # 解码并保存
             mesh_data = base64.b64decode(mesh_data_base64)
             with open(mesh_path, "wb") as f:
                 f.write(mesh_data)
@@ -662,7 +651,7 @@ class RobolaServer:
             )
 
     async def _handle_texture_upload(self, websocket: WebSocket, message: dict):
-        """处理 texture 文件上传"""
+        """texture file upload"""
         try:
             texture_name = message.get("textureName")
             file_name = message.get("fileName")
@@ -681,7 +670,6 @@ class RobolaServer:
                 )
                 return
 
-            # 确定保存路径
             texture_dir = self.work_dir
             if self.spec and self.spec.texturedir:
                 texture_dir = self.work_dir / self.spec.texturedir
@@ -689,7 +677,6 @@ class RobolaServer:
             texture_dir.mkdir(parents=True, exist_ok=True)
             texture_path = texture_dir / file_name
 
-            # 解码并保存
             texture_data = base64.b64decode(texture_data_base64)
             with open(texture_path, "wb") as f:
                 f.write(texture_data)
@@ -722,7 +709,6 @@ class RobolaServer:
             )
 
     async def _handle_step_simulation(self, websocket: WebSocket, message: dict):
-        """执行仿真步进"""
         await self.simulation.step(websocket)
 
     async def _handle_start_simulation(self, websocket: WebSocket, message: dict):
@@ -755,7 +741,6 @@ class RobolaServer:
         await self.simulation.set_actuator_controls(websocket, message.get("controls"))
 
     def run(self):
-        """启动服务器"""
         print(f"\n{'='*60}")
         print(f"  Robola Local Server")
         print(f"{'='*60}")
@@ -782,12 +767,12 @@ def serve(
     fps: float = 60.0,
 ):
     """
-    启动 Robola 本地服务
+    Start the Robola local server
 
     Args:
-        mjcf_path: MJCF 文件路径 (可选)
-        port: WebSocket 服务端口
-        allowed_origin: 允许的 CORS 来源
+        mjcf_path: Path to the MJCF file (optional)
+        port: WebSocket server port
+        allowed_origin: Allowed CORS origin
     """
     if fps <= 0 or fps > 60:
         raise ValueError("fps must be between 1 and 60 Hz")

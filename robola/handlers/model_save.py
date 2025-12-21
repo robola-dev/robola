@@ -1042,7 +1042,7 @@ def _apply_exclude_properties(exclude: mujoco.MjsExclude, data: Dict[str, Any]) 
 
 
 def _build_equality_data_array(data: Dict[str, Any]) -> Optional[List[float]]:
-    """根据前端字段结构重建 MuJoCo equality.data 数组。"""
+    """Rebuild the MuJoCo equality.data array from the frontend field structure."""
 
     type_value = data.get("type")
     if type_value is None and data.get("data") is None:
@@ -1182,7 +1182,7 @@ def _apply_tendon_path(
     tendon: mujoco.MjsTendon,
     path_segments: Optional[List[Dict[str, Any]]],
 ) -> None:
-    """根据路径段定义恢复tendon的路径。"""
+    """Rebuild the tendon path from the provided path segments."""
 
     if not path_segments:
         tendon_name = getattr(tendon, "name", None) or ""
@@ -1435,7 +1435,7 @@ def _rebuild_other_collections(
         _apply_key_properties(key, key_data)
 
 def save_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, model_data: dict, path: str) -> Dict[str, Any]:
-    """根据前端传回的 model_data 重建 MjSpec 并写入 MJCF 文件。"""
+    """Rebuild an MjSpec from the frontend-provided model_data and write it to an MJCF file."""
 
     target_path = Path(os.path.abspath(path))
     target_path.parent.mkdir(parents=True, exist_ok=True)

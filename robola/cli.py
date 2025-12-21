@@ -1,10 +1,12 @@
 """
-Robola CLI - 命令行接口
+Robola CLI
 """
 
 import argparse
 import sys
 from pathlib import Path
+
+from . import __version__
 
 DEFAULT_MJCF_TEMPLATE = """
     <mujoco model="scene">
@@ -35,6 +37,12 @@ def main():
     parser = argparse.ArgumentParser(
         prog="robola",
         description="Robola MJCF Editor - Local Python Library",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"Robola {__version__}",
+        help="Show version information and exit",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -129,8 +137,6 @@ def main():
         )
 
     elif args.command == "version":
-        from . import __version__
-
         print(f"Robola {__version__}")
 
     else:
