@@ -272,11 +272,20 @@ def _serialize_mj_value(value: Any, *, _visited: set[int] | None = None) -> Any:
     if isinstance(value, np.ndarray):
         return _serialize_mj_value(value.tolist(), _visited=_visited)
 
+    if isinstance(value, dict):
+        return {
+            key: _serialize_mj_value(item, _visited=_visited)
+            for key, item in value.items()
+        }
+
     if isinstance(value, (list, tuple)):
         return [_serialize_mj_value(item, _visited=_visited) for item in value]
 
     value_type = type(value)
     if value_type.__module__.startswith("mujoco."):
+        if hasattr(value, "value"):
+            return _serialize_mj_value(value.value, _visited=_visited)
+
         if value_type.__name__ == "MjCharVec":
             return _char_vec_to_str(value)
 
@@ -286,16 +295,21 @@ def _serialize_mj_value(value: Any, *, _visited: set[int] | None = None) -> Any:
         _visited.add(obj_id)
 
         result: dict[str, Any] = {}
-        for attr in dir(value):
-            if attr.startswith("_"):
-                continue
-            try:
-                attr_value = getattr(value, attr)
-            except Exception:
-                continue
-            if callable(attr_value):
-                continue
-            result[attr] = _serialize_mj_value(attr_value, _visited=_visited)
+        try:
+            for attr in dir(value):
+                if attr.startswith("_"):
+                    continue
+                try:
+                    attr_value = getattr(value, attr)
+                except Exception:
+                    continue
+                if callable(attr_value):
+                    continue
+                result[attr] = _serialize_mj_value(
+                    attr_value, _visited=_visited
+                )
+        finally:
+            _visited.remove(obj_id)
         return result
 
     if hasattr(value, "tolist"):
@@ -410,9 +424,8 @@ def pack_model_data(spec: mujoco.MjSpec, model: mujoco.MjModel, data: mujoco.MjD
         "option": _serialize_mj_value(spec.option),
         "stat": _serialize_mj_value(spec.stat),
         "visual": _serialize_mj_value(getattr(spec, "visual", None)),
-        
     }
-    return model_dict
+    return _serialize_mj_value(model_dict)
 
 
 def mujoco2WebPos(position):
@@ -686,7 +699,7 @@ def pack_textures_data(spec: mujoco.MjSpec) -> list:
             "name": standardize_name("texture", spec.textures[i].name, i),
             "type": spec.textures[i].type.value,
             "colorspace": spec.textures[i].colorspace.value,
-            "builtin": spec.textures[i].builtin,
+            "builtin": _serialize_mj_value(spec.textures[i].builtin),
             "mark": spec.textures[i].mark,
             "rgb1": spec.textures[i].rgb1.tolist(),
             "rgb2": spec.textures[i].rgb2.tolist(),
